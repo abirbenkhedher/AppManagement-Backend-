@@ -1,13 +1,14 @@
 const Interface = require('../models/Interface');
+const Module = require('../models/Module');
 
 // Créer une interface
 exports.createInterface = async (req, res) => {
   try {
-    const { name, componentIds } = req.body;
-
+    const { name, components } = req.body;
+    
     const newInterface = new Interface({
       name,
-      components: componentIds,
+      components
     });
 
     await newInterface.save();
@@ -57,23 +58,52 @@ exports.updateInterface = async (req, res) => {
 };
 
 // Supprimer une interface
+// controllers/interfaceController.js
+// controllers/interfaceController.js
 exports.deleteInterface = async (req, res) => {
-    try {
-      const interfaceId = req.params.id;
-  
-      // Vérifier si l'interface est utilisée dans un module
-      const modulesUsingInterface = await Module.find({ interfaces: interfaceId });
-      if (modulesUsingInterface.length > 0) {
-        return res.status(400).json({ message: "Cette interface est utilisée dans un ou plusieurs modules et ne peut pas être supprimée." });
-      }
-  
-      const deletedInterface = await Interface.findByIdAndDelete(interfaceId);
-      if (!deletedInterface) {
-        return res.status(404).json({ message: "Interface non trouvée" });
-      }
-      res.status(200).json({ message: "Interface supprimée avec succès" });
-    } catch (error) {
-      console.error("Erreur lors de la suppression de l'interface :", error);
-      res.status(500).json({ message: "Erreur lors de la suppression de l'interface" });
+
+  try {
+    const { id } = req.params;
+
+    // 1. Supprimer les références d'abord
+    await Module.updateMany(
+      { interfaces: id },
+      { $pull: { interfaces: id } },
+    );
+
+    // 2. Supprimer l'interface
+    const result = await Interface.findByIdAndDelete(id);
+
+    if (!result) {
+      throw new Error('Interface non trouvée');
     }
-  };
+
+    res.json({ success: true });
+
+  } catch (error) {
+    console.error('Transaction annulée:', error);
+    res.status(500).json({ 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  } finally {
+  }
+};
+
+  // Dans exports.updateInterface
+exports.updateInterface = async (req, res) => {
+  try {
+    const { name, components } = req.body; // Modifié de componentIds à components
+
+    const interface = await Interface.findByIdAndUpdate(
+      req.params.id,
+      { name, components }, // Modifié pour prendre les composants directement
+      { new: true }
+    );
+
+    if (!interface) return res.status(404).send('Interface non trouvée');
+    res.send(interface);
+  } catch (error) {
+    res.status(400).send(error);
+  }
+};

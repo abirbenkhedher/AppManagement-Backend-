@@ -6,8 +6,9 @@ const InterfaceSchema = new mongoose.Schema({
 });
 
 const ModuleSchema = new mongoose.Schema({
-  name: String,
-  interfaces: [InterfaceSchema],
+  name: { type: String, required: true },
+  interfaces: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Interface' }], // Array of ObjectId references
 });
+
 
 module.exports = mongoose.model('Module', ModuleSchema);

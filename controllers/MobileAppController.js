@@ -1,45 +1,100 @@
 const MobileApp = require('../models/MobileApp');
 const Module = require('../models/Module');
 
+// Vérifier l'unicité du nom d'application
+exports.checkAppName = async (req, res) => {
+  try {
+    const { name } = req.query;
+    
+    if (!name) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Le paramètre 'name' est requis" 
+      });
+    }
+
+    const existingApp = await MobileApp.findOne({ name });
+    res.status(200).json({ 
+      success: true,
+      isUnique: !existingApp 
+    });
+  } catch (error) {
+    console.error("Erreur lors de la vérification du nom:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Erreur serveur lors de la vérification du nom",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 // Créer une application
 exports.createApp = async (req, res) => {
   try {
-    console.log("Données reçues :", req.body);
-    console.log("Fichier reçu :", req.file);
-
     const { name, details, status, modules } = req.body;
 
     if (!name || !details) {
-      return res.status(400).json({ message: "Le nom et les détails sont obligatoires." });
+      return res.status(400).json({ 
+        success: false,
+        message: "Le nom et les détails sont obligatoires." 
+      });
+    }
+
+    // Vérification de l'unicité du nom
+    const existingApp = await MobileApp.findOne({ name });
+    if (existingApp) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Une application avec ce nom existe déjà." 
+      });
     }
 
     let modulesArray = [];
     if (modules) {
-      modulesArray = Array.isArray(modules) ? modules : [modules]; // Assurer que modules est un tableau
+      modulesArray = Array.isArray(modules) ? modules : [modules];
       const existingModules = await Module.find({ _id: { $in: modulesArray } });
       if (existingModules.length !== modulesArray.length) {
-        return res.status(400).json({ message: "Un ou plusieurs modules n'existent pas." });
+        return res.status(400).json({ 
+          success: false,
+          message: "Un ou plusieurs modules n'existent pas." 
+        });
       }
     }
 
-    // Gestion de l'upload de l'image
-    const logoUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : null;
-
+    const logoUrl = req.file 
+    ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`
+    : null;
+    
     const newApp = new MobileApp({
       name,
       details,
       status,
       modules: modulesArray,
-      dateCreation: new Date(),
-      DateModification: new Date(),
-      logo: logoUrl, 
+      logo: logoUrl,
     });
 
     await newApp.save();
-    res.status(201).json(newApp);
+    
+    res.status(201).json({
+      success: true,
+      data: newApp
+    });
   } catch (error) {
     console.error("Erreur lors de la création de l'application :", error);
-    res.status(500).json({ message: "Erreur lors de la création de l'application", error: error.message });
+    
+    // Gestion spécifique de l'erreur d'unicité
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "Une application avec ce nom existe déjà."
+      });
+    }
+
+    res.status(500).json({ 
+      success: false,
+      message: "Erreur lors de la création de l'application",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -58,7 +113,14 @@ exports.getAllApps = async (req, res) => {
 // Lire une application par ID
 exports.getAppById = async (req, res) => {
   try {
-    const app = await MobileApp.findById(req.params.id).populate('modules');
+    const app = await MobileApp.findById(req.params.id)
+      .populate({
+        path: 'modules',
+        populate: {
+          path: 'interfaces'
+        }
+      });
+      
     if (!app) {
       return res.status(404).json({ message: "Application non trouvée" });
     }
@@ -72,36 +134,71 @@ exports.getAppById = async (req, res) => {
 // Mettre à jour une application
 exports.updateApp = async (req, res) => {
   try {
-    const { name, details, status, moduleIds = [], logo } = req.body;
+    const { name, details, status, moduleIds = [] } = req.body;
+
+    // Vérification de l'unicité si le nom est modifié
+    if (name) {
+      const existingApp = await MobileApp.findOne({ name, _id: { $ne: req.params.id } });
+      if (existingApp) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Une application avec ce nom existe déjà." 
+        });
+      }
+    }
 
     let existingModules = [];
     if (moduleIds.length > 0) {
       existingModules = await Module.find({ _id: { $in: moduleIds } });
       if (existingModules.length !== moduleIds.length) {
-        return res.status(400).json({ message: "Un ou plusieurs modules n'existent pas." });
+        return res.status(400).json({ 
+          success: false,
+          message: "Un ou plusieurs modules n'existent pas." 
+        });
       }
     }
 
+    const updateData = {
+      ...(name && { name }),
+      ...(details && { details }),
+      ...(status && { status }),
+      modules: existingModules.map(m => m._id),
+      DateModification: new Date(),
+    };
+
     const updatedApp = await MobileApp.findByIdAndUpdate(
       req.params.id,
-      {
-        name,
-        details,
-        status,
-        modules: existingModules.map(m => m._id),
-        logo,
-        dateModification: new Date(),
-      },
+      updateData,
       { new: true }
     ).populate('modules');
 
     if (!updatedApp) {
-      return res.status(404).json({ message: "Application non trouvée" });
+      return res.status(404).json({ 
+        success: false,
+        message: "Application non trouvée" 
+      });
     }
-    res.status(200).json(updatedApp);
+    
+    res.status(200).json({
+      success: true,
+      data: updatedApp
+    });
   } catch (error) {
     console.error("Erreur lors de la mise à jour de l'application :", error);
-    res.status(500).json({ message: "Erreur serveur" });
+    
+    // Gestion spécifique de l'erreur d'unicité
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "Une application avec ce nom existe déjà."
+      });
+    }
+
+    res.status(500).json({ 
+      success: false,
+      message: "Erreur serveur",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 

@@ -5,16 +5,27 @@ const MobileApp = require('../models/MobileApp');
 // Créer un module
 exports.createModule = async (req, res) => {
   try {
-    const { name, interfaceIds } = req.body;
+    const { name, interfaces } = req.body;
+
+    // Validate interface IDs
+    if (!Array.isArray(interfaces)) {
+      return res.status(400).json({ message: "Les interfaces doivent être un tableau d'IDs." });
+    }
+
+    const areValidObjectIds = interfaces.every(id => mongoose.Types.ObjectId.isValid(id));
+    if (!areValidObjectIds) {
+      return res.status(400).json({ message: "Certains IDs d'interfaces sont invalides." });
+    }
 
     const newModule = new Module({
       name,
-      interfaces: interfaceIds,
+      interfaces,
     });
 
     await newModule.save();
     res.status(201).send(newModule);
   } catch (error) {
+    console.error("Erreur lors de la création du module :", error);
     res.status(400).send(error);
   }
 };
@@ -45,16 +56,34 @@ exports.updateModule = async (req, res) => {
   try {
     const { name, interfaceIds } = req.body;
 
-    const module = await Module.findByIdAndUpdate(
+    console.log("Données reçues :", { name, interfaceIds }); // Debugging
+
+    // Vérification que interfaceIds est bien un tableau d'ObjectId
+    if (!Array.isArray(interfaceIds)) {
+      return res.status(400).json({ message: "Les interfaces doivent être un tableau d'IDs." });
+    }
+
+    const areValidObjectIds = interfaceIds.every(id => mongoose.Types.ObjectId.isValid(id));
+    if (!areValidObjectIds) {
+      return res.status(400).json({ message: "Certains IDs d'interfaces sont invalides." });
+    }
+
+    // Mettre à jour le module avec les nouveaux IDs d'interfaces
+    const updatedModule = await Module.findByIdAndUpdate(
       req.params.id,
       { name, interfaces: interfaceIds },
-      { new: true }
-    ).populate('interfaces');
+      { new: true } // Retourner le module mis à jour
+    ).populate('interfaces'); // Peupler les interfaces après mise à jour
 
-    if (!module) return res.status(404).send('Module non trouvé');
-    res.send(module);
+    // Si le module n'est pas trouvé
+    if (!updatedModule) {
+      return res.status(404).json({ message: "Module non trouvé" });
+    }
+
+    res.status(200).json(updatedModule);
   } catch (error) {
-    res.status(400).send(error);
+    console.error("Erreur lors de la mise à jour du module :", error);
+    res.status(400).json({ message: "Erreur lors de la mise à jour du module" });
   }
 };
 

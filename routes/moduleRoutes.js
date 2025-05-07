@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const Module = require('../models/Module');
+const ModuleController = require('../controllers/ModuleController');
+
+
 
 // GET /api/modules - Fetch all modules
 router.get('/modules', async (req, res) => {
@@ -41,5 +44,9 @@ router.delete('/modules/:id', async (req, res) => {
       res.status(500).json({ message: "Erreur lors de la suppression du module" });
     }
   });
+
+
+  router.put('/modules/:id', ModuleController.updateModule);
+
 
 module.exports = router;
