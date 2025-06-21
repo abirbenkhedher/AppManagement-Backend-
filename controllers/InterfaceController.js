@@ -4,17 +4,43 @@ const Module = require('../models/Module');
 // Créer une interface
 exports.createInterface = async (req, res) => {
   try {
-    const { name, components } = req.body;
-    
+    const { name, components, headerConfig = {}, interfaceConfig = {} } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ message: "Le nom de l'interface est requis" });
+    }
+
     const newInterface = new Interface({
       name,
-      components
+      components: components || [],
+      headerConfig: {
+        title: headerConfig.title || "Titre",
+        backgroundColor: headerConfig.backgroundColor || "#0d6efd",
+        color: headerConfig.color || "#ffffff",
+        fontSize: headerConfig.fontSize || "18px",
+        fontWeight: headerConfig.fontWeight || "bold",
+        textAlign: headerConfig.textAlign || "center",
+        showBackButton: headerConfig.showBackButton !== false,
+        showMenuButton: headerConfig.showMenuButton !== false,
+        menuOptions: headerConfig.menuOptions || [],
+        fixed: headerConfig.fixed !== false,
+        elevation: headerConfig.elevation || 4
+      },
+      interfaceConfig: {
+        backgroundColor: interfaceConfig.backgroundColor || "#f8f9fa",
+        padding: interfaceConfig.padding || "15px",
+        margin: interfaceConfig.margin || "0",
+        gap: interfaceConfig.gap || "10px",
+      }
     });
 
     await newInterface.save();
-    res.status(201).send(newInterface);
+    res.status(201).json(newInterface);
   } catch (error) {
-    res.status(400).send(error);
+    res.status(400).json({
+      message: "Erreur lors de la création",
+      error: error.message
+    });
   }
 };
 
@@ -33,6 +59,11 @@ exports.getInterfaceById = async (req, res) => {
   try {
     const interface = await Interface.findById(req.params.id).populate('components');
     if (!interface) return res.status(404).send('Interface non trouvée');
+
+    const responseData = interface.toObject();
+    if (!responseData.interfaceConfig) {
+      responseData.interfaceConfig = {};
+    }
     res.send(interface);
   } catch (error) {
     res.status(500).send(error);
@@ -41,19 +72,60 @@ exports.getInterfaceById = async (req, res) => {
 
 // Mettre à jour une interface
 exports.updateInterface = async (req, res) => {
+
   try {
-    const { name, componentIds } = req.body;
+    const { id } = req.params;
+    const { name, components, headerConfig = {}, interfaceConfig = {} } = req.body;
 
-    const interface = await Interface.findByIdAndUpdate(
-      req.params.id,
-      { name, components: componentIds },
-      { new: true }
-    ).populate('components');
+    
 
-    if (!interface) return res.status(404).send('Interface non trouvée');
-    res.send(interface);
+    // Construction de l'objet de mise à jour
+    const updateData = {
+      name,
+      components,
+      headerConfig: {
+        title: headerConfig.title,
+        backgroundColor: headerConfig.backgroundColor,
+        color: headerConfig.color,
+        fontSize: headerConfig.fontSize,
+        fontWeight: headerConfig.fontWeight,
+        textAlign: headerConfig.textAlign,
+        showBackButton: headerConfig.showBackButton,
+        showMenuButton: headerConfig.showMenuButton,
+        menuOptions: headerConfig.menuOptions,
+        fixed: headerConfig.fixed,
+        elevation: headerConfig.elevation
+      },
+      interfaceConfig: {
+        backgroundColor: interfaceConfig.backgroundColor,
+        padding: interfaceConfig.padding,
+        margin: interfaceConfig.margin,
+        gap: interfaceConfig.gap
+      },
+      updatedAt: Date.now()
+    };
+
+
+    const updatedInterface = await Interface.findOneAndUpdate(
+      { _id: id },
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedInterface) {
+      return res.status(404).json({ message: "Interface non trouvée" });
+    }
+
+
+
+    res.json(updatedInterface);
   } catch (error) {
-    res.status(400).send(error);
+    console.error("Erreur de mise à jour:", error);
+    res.status(400).json({
+      message: "Erreur lors de la mise à jour",
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 
@@ -90,20 +162,4 @@ exports.deleteInterface = async (req, res) => {
   }
 };
 
-  // Dans exports.updateInterface
-exports.updateInterface = async (req, res) => {
-  try {
-    const { name, components } = req.body; // Modifié de componentIds à components
-
-    const interface = await Interface.findByIdAndUpdate(
-      req.params.id,
-      { name, components }, // Modifié pour prendre les composants directement
-      { new: true }
-    );
-
-    if (!interface) return res.status(404).send('Interface non trouvée');
-    res.send(interface);
-  } catch (error) {
-    res.status(400).send(error);
-  }
-};
+ 

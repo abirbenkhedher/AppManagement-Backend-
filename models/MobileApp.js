@@ -19,20 +19,30 @@ const MobileAppSchema = new mongoose.Schema({
   modules: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Module',
-    // Ajoutez ceci pour autoriser la population profonde
     populate: {
       path: 'interfaces',
-      model: 'Interface'
+      model: 'Interface',
+      populate: {
+        path: 'headerConfig',
+        model: 'HeaderConfig'
+      }
     }
   }],
-  exportedData: { type: Object },
+  exportedData: { 
+    type: Object,
+    default: null
+  },
+  exportConfig: {
+    type: {
+      lastExportDate: Date,
+      exportVersion: String
+    },
+    default: null
+  }
 }, {
-  // Activez la population virtuelle
   toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  toObject: { virtuals: true },
+  strictPopulate: false
 });
-
-// Alternative : Si vous ne voulez pas modifier le schéma
-MobileAppSchema.set('strictPopulate', false);
 
 module.exports = mongoose.model('MobileApp', MobileAppSchema);

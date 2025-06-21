@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const actionController = require('../controllers/actionscontroller');
+const Interface = require('../models/Interface');
 
 router.get('/interfaces', async (req, res) => {
     try {

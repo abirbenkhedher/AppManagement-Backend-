@@ -90,6 +90,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/actions', actionroutes);
 app.use('/api/apps',approutes)
 
+
 // Test endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({ 

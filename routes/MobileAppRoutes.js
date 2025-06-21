@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mobileAppController = require('../controllers/MobileAppController');
 const upload = require('../middleware/upload'); // Importation de Multer
-
+const MobileApp = require('../models/MobileApp')
 
 
 router.get('/apps/check-name', mobileAppController.checkAppName);
@@ -55,5 +55,79 @@ router.get('/apps/:id', mobileAppController.getAppById);
 router.delete('/apps/:id', mobileAppController.deleteApp);
 
 
+router.put('/apps/:id', 
+    upload.single('logo'),
+    async (req, res) => {
+        try {
+            const { name, details, status, modules } = req.body;
+            
+            if (!name || !details) {
+                return res.status(400).json({ 
+                    success: false,
+                    message: "Name and details are required" 
+                });
+            }
+
+            // Convert modules array to just IDs if needed
+            const moduleIds = Array.isArray(modules) 
+                ? modules.map(m => m._id || m)
+                : [];
+
+            const updateData = {
+                name,
+                details,
+                status: status || "En développement",
+                modules: moduleIds,
+                DateModification: new Date()
+            };
+
+            if (req.file) {
+                updateData.logo = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+            }
+
+            const updatedApp = await MobileApp.findByIdAndUpdate(
+                req.params.id,
+                updateData,
+                { new: true, runValidators: true }
+            ).populate('modules');
+
+            if (!updatedApp) {
+                return res.status(404).json({ 
+                    success: false,
+                    message: "App not found" 
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                data: updatedApp
+            });
+
+        } catch (error) {
+            console.error("Update error:", error);
+            
+            if (error.name === 'ValidationError') {
+                return res.status(400).json({
+                    success: false,
+                    message: "Validation failed",
+                    errors: error.errors
+                });
+            }
+            
+            if (error.code === 11000) {
+                return res.status(400).json({
+                    success: false,
+                    message: "App with this name already exists"
+                });
+            }
+
+            res.status(500).json({ 
+                success: false,
+                message: "Server error",
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+);
 
 module.exports = router;

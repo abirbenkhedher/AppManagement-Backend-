@@ -5,6 +5,7 @@ const App = require('../models/MobileApp');
 
 // Export endpoint modifié
 // Modifiez la route d'export pour inclure les actions complètes
+// Modifiez la route d'export pour inclure les headers
 router.post('/:id/export', async (req, res) => {
   try {
     console.log('Début export pour app:', req.params.id);
@@ -13,7 +14,11 @@ router.post('/:id/export', async (req, res) => {
         path: 'modules',
         populate: {
           path: 'interfaces',
-          model: 'Interface'
+          model: 'Interface',
+          populate: {
+            path: 'headerConfig',
+            model: 'HeaderConfig'
+          }
         }
       });
 
@@ -22,22 +27,93 @@ router.post('/:id/export', async (req, res) => {
       return res.status(404).json({ message: 'Application non trouvée' });
     }
 
-    // Construction des données
+    // Construction des données d'export complètes
     const exportData = {
       appInfo: {
         name: app.name,
         id: app._id,
-        version: '1.0'
+        details: app.details,
+        dateCreation: app.dateCreation,
+        status: app.status
       },
       modules: app.modules.map(module => ({
         name: module.name,
         interfaces: module.interfaces.map(intf => ({
           name: intf.name,
-          components: intf.components.map(comp => ({
+          createdAt: intf.createdAt,
+          updatedAt: intf.updatedAt,
+          // Configuration complète de l'interface
+          interfaceConfig: intf.interfaceConfig ? {
+            backgroundColor: intf.interfaceConfig.backgroundColor,
+            padding: intf.interfaceConfig.padding,
+            margin: intf.interfaceConfig.margin,
+            gap: intf.interfaceConfig.gap
+          } : null,
+          // Configuration complète du header
+          headerConfig: intf.headerConfig ? {
+            title: intf.headerConfig.title,
+            backgroundColor: intf.headerConfig.backgroundColor,
+            color: intf.headerConfig.color,
+            fontSize: intf.headerConfig.fontSize,
+            fontWeight: intf.headerConfig.fontWeight,
+            textAlign: intf.headerConfig.textAlign,
+            showBackButton: intf.headerConfig.showBackButton,
+            showMenuButton: intf.headerConfig.showMenuButton,
+            fixed: intf.headerConfig.fixed,
+            elevation: intf.headerConfig.elevation,
+            menuOptions: intf.headerConfig.menuOptions?.map(option => ({
+              id: option.id,
+              label: option.label,
+              action: option.action ? {
+                type: option.action.type,
+                target: option.action.target,
+                params: option.action.params || {},
+                ...(option.action.type === 'api' && {
+                  method: option.action.method,
+                  url: option.action.url,
+                  headers: option.action.headers
+                })
+              } : null
+            })) || []
+          } : null,
+          // Export complet des composants
+          components: intf.components?.map(comp => ({
             id: comp.id,
             type: comp.type,
             text: comp.text,
             placeholder: comp.placeholder,
+            inputType: comp.inputType,
+            variant: comp.variant,
+            // Style complet
+            style: comp.style ? {
+              backgroundColor: comp.style.backgroundColor,
+              color: comp.style.color,
+              width: comp.style.width,
+              height: comp.style.height,
+              margin: comp.style.margin,
+              padding: comp.style.padding,
+              fontSize: comp.style.fontSize,
+              fontWeight: comp.style.fontWeight,
+              fontStyle: comp.style.fontStyle,
+              textAlign: comp.style.textAlign,
+              zIndex: comp.style.zIndex,
+              position: comp.style.position,
+              flex: comp.style.flex,
+              minWidth: comp.style.minWidth,
+              border: comp.style.border,
+              borderRadius: comp.style.borderRadius,
+              boxShadow: comp.style.boxShadow,
+              display: comp.style.display,
+              flexDirection: comp.style.flexDirection,
+              justifyContent: comp.style.justifyContent,
+              alignItems: comp.style.alignItems,
+              flexWrap: comp.style.flexWrap,
+              cursor: comp.style.cursor,
+              opacity: comp.style.opacity,
+              transform: comp.style.transform,
+              transition: comp.style.transition
+            } : null,
+            // Actions complètes
             action: comp.action ? {
               type: comp.action.type,
               target: comp.action.target,
@@ -47,16 +123,22 @@ router.post('/:id/export', async (req, res) => {
                 url: comp.action.url,
                 headers: comp.action.headers,
                 body: comp.action.body
+              }),
+              ...(comp.action.type === 'function' && {
+                functionName: comp.action.functionName
               })
-            } : null,
-            style: comp.style
-          }))
+            } : null
+          })) || []
         }))
       })),
-      exportDate: new Date()
+      exportMeta: {
+        date: new Date(),
+        version: '1.0',
+        exportedBy: req.user?.id || 'system'
+      }
     };
 
-    // Sauvegarde
+    // Sauvegarde de l'export
     app.exportedData = exportData;
     app.exportConfig = {
       lastExportDate: new Date(),
@@ -67,7 +149,7 @@ router.post('/:id/export', async (req, res) => {
     console.log('Export réussi pour app:', app.name);
     res.status(200).json({
       success: true,
-      data: app,
+      data: exportData,
       message: 'Export réussi'
     });
 
@@ -76,7 +158,8 @@ router.post('/:id/export', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Échec export',
-      error: error.message
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
