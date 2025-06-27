@@ -33,12 +33,7 @@
     try {
       const { name, details, status, modules } = req.body;
 
-      if (!name || !details) {
-        return res.status(400).json({ 
-          success: false,
-          message: "Le nom et les détails sont obligatoires." 
-        });
-      }
+      
 
       // Vérification de l'unicité du nom
       const existingApp = await MobileApp.findOne({ name });

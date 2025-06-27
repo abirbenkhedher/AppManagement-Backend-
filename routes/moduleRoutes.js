@@ -17,17 +17,9 @@ router.get('/modules', async (req, res) => {
 });
 
 // POST /api/modules - Add a new module
-router.post('/modules', async (req, res) => {
-  try {
-    const { name, interfaces } = req.body;
-    const newModule = new Module({ name, interfaces });
-    await newModule.save();
-    res.status(201).json(newModule);
-  } catch (error) {
-    console.error("Erreur lors de l'ajout du module :", error);
-    res.status(500).json({ message: "Erreur lors de l'ajout du module" });
-  }
-});
+router.post('/modules', ModuleController.createModule);
+router.get('/modules-tree', ModuleController.getModuleTree);
+
 
 
 

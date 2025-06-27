@@ -7,7 +7,7 @@ const MobileAppSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
-  details: { type: String, required: true },
+  details: { type: String },
   dateCreation: { type: Date, default: Date.now },
   DateModification: { type: Date, default: Date.now },
   status: {

@@ -1,3 +1,4 @@
+// models/Module.js
 const mongoose = require('mongoose');
 
 const InterfaceSchema = new mongoose.Schema({
@@ -7,8 +8,8 @@ const InterfaceSchema = new mongoose.Schema({
 
 const ModuleSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  interfaces: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Interface' }], // Array of ObjectId references
+  interfaces: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Interface' }],
+  parentModuleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Module', default: null }, // <-- Nouveau
 });
-
 
 module.exports = mongoose.model('Module', ModuleSchema);

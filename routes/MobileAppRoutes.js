@@ -3,7 +3,7 @@ const router = express.Router();
 const mobileAppController = require('../controllers/MobileAppController');
 const upload = require('../middleware/upload'); // Importation de Multer
 const MobileApp = require('../models/MobileApp')
-
+const Module = require('../models/Module');
 
 router.get('/apps/check-name', mobileAppController.checkAppName);
 
@@ -59,7 +59,7 @@ router.put('/apps/:id',
     upload.single('logo'),
     async (req, res) => {
         try {
-            const { name, details, status, modules } = req.body;
+            const { name, details, status } = req.body;
             
             if (!name || !details) {
                 return res.status(400).json({ 
@@ -68,10 +68,29 @@ router.put('/apps/:id',
                 });
             }
 
-            // Convert modules array to just IDs if needed
-            const moduleIds = Array.isArray(modules) 
-                ? modules.map(m => m._id || m)
-                : [];
+            // Handle modules - they might come as array or string
+            let moduleIds = [];
+            if (req.body.modules) {
+                // If modules is an array (normal case)
+                if (Array.isArray(req.body.modules)) {
+                    moduleIds = req.body.modules;
+                } 
+                // If modules is a string (FormData case)
+                else if (typeof req.body.modules === 'string') {
+                    moduleIds = req.body.modules.split(',');
+                }
+            }
+
+            // Verify modules exist if any are provided
+            if (moduleIds.length > 0) {
+                const existingModules = await Module.find({ _id: { $in: moduleIds } });
+                if (existingModules.length !== moduleIds.length) {
+                    return res.status(400).json({ 
+                        success: false,
+                        message: "One or more modules don't exist" 
+                    });
+                }
+            }
 
             const updateData = {
                 name,
@@ -129,5 +148,4 @@ router.put('/apps/:id',
         }
     }
 );
-
 module.exports = router;

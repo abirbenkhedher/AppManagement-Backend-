@@ -5,9 +5,8 @@ const MobileApp = require('../models/MobileApp');
 // Créer un module
 exports.createModule = async (req, res) => {
   try {
-    const { name, interfaces } = req.body;
+    const { name, interfaces, parentModuleId } = req.body;
 
-    // Validate interface IDs
     if (!Array.isArray(interfaces)) {
       return res.status(400).json({ message: "Les interfaces doivent être un tableau d'IDs." });
     }
@@ -17,9 +16,15 @@ exports.createModule = async (req, res) => {
       return res.status(400).json({ message: "Certains IDs d'interfaces sont invalides." });
     }
 
+    // Valider parentModuleId si présent
+    if (parentModuleId && !mongoose.Types.ObjectId.isValid(parentModuleId)) {
+      return res.status(400).json({ message: "ID de module parent invalide." });
+    }
+
     const newModule = new Module({
       name,
       interfaces,
+      parentModuleId: parentModuleId || null
     });
 
     await newModule.save();
@@ -27,6 +32,25 @@ exports.createModule = async (req, res) => {
   } catch (error) {
     console.error("Erreur lors de la création du module :", error);
     res.status(400).send(error);
+  }
+};
+
+exports.getModuleTree = async (req, res) => {
+  try {
+    const modules = await Module.find().populate('interfaces').lean();
+
+    const buildTree = (parentId = null) => {
+      return modules
+        .filter(m => String(m.parentModuleId) === String(parentId))
+        .map(m => ({
+          ...m,
+          children: buildTree(m._id)
+        }));
+    };
+
+    res.json(buildTree());
+  } catch (error) {
+    res.status(500).json({ message: "Erreur lors de la construction de l'arbre des modules" });
   }
 };
 
