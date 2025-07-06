@@ -126,7 +126,27 @@ const ComponentSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['Bouton', 'Champ texte', 'Label', 'Image', 'Conteneur']
+    enum: ['Bouton', 'Champ texte', 'Label', 'Image', 'Liste','Détails']
+  },
+
+   apiConfig: {
+    url: String,
+    method: {
+      type: String,
+      enum: ['GET', 'POST', 'PUT', 'DELETE']
+    },
+    headers: mongoose.Schema.Types.Mixed,
+    params: mongoose.Schema.Types.Mixed,
+    dataPath: String, // Chemin pour extraire les données (ex: "data.items")
+    itemTemplate: mongoose.Schema.Types.Mixed // Template pour chaque élément de liste
+  },
+  detailConfig: {
+    idField: String, // Champ utilisé comme ID pour les détails
+    detailFields: [{
+      label: String,
+      field: String,
+      type: String // texte, nombre, date, etc.
+    }]
   },
   placeholder: String,
   text: String,
