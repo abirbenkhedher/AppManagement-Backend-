@@ -140,14 +140,20 @@ const ComponentSchema = new mongoose.Schema({
     dataPath: String, // Chemin pour extraire les données (ex: "data.items")
     itemTemplate: mongoose.Schema.Types.Mixed // Template pour chaque élément de liste
   },
+  detailInterface: String,
   detailConfig: {
-    idField: String, // Champ utilisé comme ID pour les détails
-    detailFields: [{
-      label: String,
-      field: String,
-      type: String // texte, nombre, date, etc.
-    }]
+    idField: String,
+     listFields: [{
+    label: String,
+    field: String
+  }],
+   detailFields: [{
+    label: String,
+    field: String
+  }],
+    selectedItem: mongoose.Schema.Types.Mixed
   },
+
   placeholder: String,
   text: String,
   inputType: {

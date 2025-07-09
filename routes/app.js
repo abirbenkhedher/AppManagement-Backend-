@@ -34,7 +34,8 @@ router.post('/:id/export', async (req, res) => {
         id: app._id,
         details: app.details,
         dateCreation: app.dateCreation,
-        status: app.status
+        status: app.status,
+        logo: app.logo
       },
       modules: app.modules.map(module => ({
         name: module.name,
@@ -64,6 +65,7 @@ router.post('/:id/export', async (req, res) => {
             menuOptions: intf.headerConfig.menuOptions?.map(option => ({
               id: option.id,
               label: option.label,
+              isActive: option.isActive,
               action: option.action ? {
                 type: option.action.type,
                 target: option.action.target,
@@ -71,7 +73,11 @@ router.post('/:id/export', async (req, res) => {
                 ...(option.action.type === 'api' && {
                   method: option.action.method,
                   url: option.action.url,
-                  headers: option.action.headers
+                  headers: option.action.headers,
+                  body: option.action.body
+                }),
+                ...(option.action.type === 'function' && {
+                  functionName: option.action.functionName
                 })
               } : null
             })) || []
@@ -84,6 +90,29 @@ router.post('/:id/export', async (req, res) => {
             placeholder: comp.placeholder,
             inputType: comp.inputType,
             variant: comp.variant,
+            // Configuration API pour les composants de type Liste/Détails
+            apiConfig: comp.apiConfig ? {
+              url: comp.apiConfig.url,
+              method: comp.apiConfig.method,
+              headers: comp.apiConfig.headers,
+              params: comp.apiConfig.params,
+              dataPath: comp.apiConfig.dataPath,
+              itemTemplate: comp.apiConfig.itemTemplate
+            } : null,
+            // Configuration des détails
+            detailConfig: comp.detailConfig ? {
+              idField: comp.detailConfig.idField,
+              listFields: comp.detailConfig.listFields?.map(field => ({
+                label: field.label,
+                field: field.field
+              })) || [],
+              detailFields: comp.detailConfig.detailFields?.map(field => ({
+                label: field.label,
+                field: field.field
+              })) || [],
+              selectedItem: comp.detailConfig.selectedItem
+            } : null,
+            detailInterface: comp.detailInterface,
             // Style complet
             style: comp.style ? {
               backgroundColor: comp.style.backgroundColor,
