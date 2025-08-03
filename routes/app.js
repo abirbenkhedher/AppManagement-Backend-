@@ -27,6 +27,103 @@ router.post('/:id/export', async (req, res) => {
       return res.status(404).json({ message: 'Application non trouvée' });
     }
 
+    // Fonction récursive pour exporter les composants imbriqués
+    const exportComponent = (component) => {
+      return {
+        id: component.id,
+        type: component.type,
+        text: component.text,
+        placeholder: component.placeholder,
+        inputType: component.inputType,
+        variant: component.variant,
+        apiField: component.apiField,
+        apiConfig: component.apiConfig ? {
+          url: component.apiConfig.url,
+          method: component.apiConfig.method,
+          headers: component.apiConfig.headers,
+          params: component.apiConfig.params,
+          dataPath: component.apiConfig.dataPath,
+          itemTemplate: component.apiConfig.itemTemplate
+        } : null,
+        detailInterface: component.detailInterface,
+        detailConfig: component.detailConfig ? {
+          idField: component.detailConfig.idField,
+          listFields: component.detailConfig.listFields?.map(field => ({
+            label: field.label,
+            field: field.field
+          })) || [],
+          detailFields: component.detailConfig.detailFields?.map(field => ({
+            label: field.label,
+            field: field.field
+          })) || [],
+          selectedItem: component.detailConfig.selectedItem
+        } : null,
+        action: component.action ? {
+          type: component.action.type,
+          target: component.action.target,
+          params: component.action.params || {},
+          ...(component.action.type === 'api' && {
+            method: component.action.method,
+            url: component.action.url,
+            headers: component.action.headers,
+            body: component.action.body,
+            dataPath: component.action.dataPath
+          }),
+          ...(component.action.type === 'function' && {
+            functionName: component.action.functionName
+          }),
+          detailInterface: component.action.detailInterface,
+          detailConfig: component.action.detailConfig ? {
+            idField: component.action.detailConfig.idField,
+            listFields: component.action.detailConfig.listFields?.map(field => ({
+              label: field.label,
+              field: field.field
+            })) || [],
+            detailFields: component.action.detailConfig.detailFields?.map(field => ({
+              label: field.label,
+              field: field.field
+            })) || [],
+            selectedItem: component.action.detailConfig.selectedItem
+          } : null
+        } : null,
+        style: component.style ? {
+          backgroundColor: component.style.backgroundColor,
+          color: component.style.color,
+          width: component.style.width,
+          height: component.style.height,
+          margin: component.style.margin,
+          padding: component.style.padding,
+          fontSize: component.style.fontSize,
+          fontWeight: component.style.fontWeight,
+          fontStyle: component.style.fontStyle,
+          textAlign: component.style.textAlign,
+          zIndex: component.style.zIndex,
+          position: component.style.position,
+          top: component.style.top,
+          left: component.style.left,
+          right: component.style.right,
+          bottom: component.style.bottom,
+          flex: component.style.flex,
+          minWidth: component.style.minWidth,
+          border: component.style.border,
+          borderColor: component.style.borderColor,
+          borderWidth: component.style.borderWidth,
+          borderRadius: component.style.borderRadius,
+          boxShadow: component.style.boxShadow,
+          display: component.style.display,
+          flexDirection: component.style.flexDirection,
+          justifyContent: component.style.justifyContent,
+          alignItems: component.style.alignItems,
+          flexWrap: component.style.flexWrap,
+          cursor: component.style.cursor,
+          opacity: component.style.opacity,
+          transform: component.style.transform,
+          transition: component.style.transition
+        } : null,
+        components: component.components?.map(nestedComp => exportComponent(nestedComp)) || []
+      };
+    };
+
     // Construction des données d'export complètes
     const exportData = {
       appInfo: {
@@ -35,7 +132,9 @@ router.post('/:id/export', async (req, res) => {
         details: app.details,
         dateCreation: app.dateCreation,
         status: app.status,
-        logo: app.logo
+        logo: app.logo,
+        previewToken: app.previewToken,
+        previewTokenExpires: app.previewTokenExpires
       },
       modules: app.modules.map(module => ({
         name: module.name,
@@ -43,14 +142,12 @@ router.post('/:id/export', async (req, res) => {
           name: intf.name,
           createdAt: intf.createdAt,
           updatedAt: intf.updatedAt,
-          // Configuration complète de l'interface
           interfaceConfig: intf.interfaceConfig ? {
             backgroundColor: intf.interfaceConfig.backgroundColor,
             padding: intf.interfaceConfig.padding,
             margin: intf.interfaceConfig.margin,
             gap: intf.interfaceConfig.gap
           } : null,
-          // Configuration complète du header
           headerConfig: intf.headerConfig ? {
             title: intf.headerConfig.title,
             backgroundColor: intf.headerConfig.backgroundColor,
@@ -82,88 +179,20 @@ router.post('/:id/export', async (req, res) => {
               } : null
             })) || []
           } : null,
-          // Export complet des composants
-          components: intf.components?.map(comp => ({
-            id: comp.id,
-            type: comp.type,
-            text: comp.text,
-            placeholder: comp.placeholder,
-            inputType: comp.inputType,
-            variant: comp.variant,
-            // Configuration API pour les composants de type Liste/Détails
-            apiConfig: comp.apiConfig ? {
-              url: comp.apiConfig.url,
-              method: comp.apiConfig.method,
-              headers: comp.apiConfig.headers,
-              params: comp.apiConfig.params,
-              dataPath: comp.apiConfig.dataPath,
-              itemTemplate: comp.apiConfig.itemTemplate
-            } : null,
-            // Configuration des détails
-            detailConfig: comp.detailConfig ? {
-              idField: comp.detailConfig.idField,
-              listFields: comp.detailConfig.listFields?.map(field => ({
-                label: field.label,
-                field: field.field
-              })) || [],
-              detailFields: comp.detailConfig.detailFields?.map(field => ({
-                label: field.label,
-                field: field.field
-              })) || [],
-              selectedItem: comp.detailConfig.selectedItem
-            } : null,
-            detailInterface: comp.detailInterface,
-            // Style complet
-            style: comp.style ? {
-              backgroundColor: comp.style.backgroundColor,
-              color: comp.style.color,
-              width: comp.style.width,
-              height: comp.style.height,
-              margin: comp.style.margin,
-              padding: comp.style.padding,
-              fontSize: comp.style.fontSize,
-              fontWeight: comp.style.fontWeight,
-              fontStyle: comp.style.fontStyle,
-              textAlign: comp.style.textAlign,
-              zIndex: comp.style.zIndex,
-              position: comp.style.position,
-              flex: comp.style.flex,
-              minWidth: comp.style.minWidth,
-              border: comp.style.border,
-              borderRadius: comp.style.borderRadius,
-              boxShadow: comp.style.boxShadow,
-              display: comp.style.display,
-              flexDirection: comp.style.flexDirection,
-              justifyContent: comp.style.justifyContent,
-              alignItems: comp.style.alignItems,
-              flexWrap: comp.style.flexWrap,
-              cursor: comp.style.cursor,
-              opacity: comp.style.opacity,
-              transform: comp.style.transform,
-              transition: comp.style.transition
-            } : null,
-            // Actions complètes
-            action: comp.action ? {
-              type: comp.action.type,
-              target: comp.action.target,
-              params: comp.action.params || {},
-              ...(comp.action.type === 'api' && {
-                method: comp.action.method,
-                url: comp.action.url,
-                headers: comp.action.headers,
-                body: comp.action.body
-              }),
-              ...(comp.action.type === 'function' && {
-                functionName: comp.action.functionName
-              })
-            } : null
-          })) || []
+          components: intf.components?.map(comp => exportComponent(comp)) || []
         }))
       })),
+      componentActions: app.componentActions?.map(action => ({
+        componentId: action.componentId,
+        actionType: action.actionType,
+        ...action,
+        createdAt: action.createdAt
+      })) || [],
       exportMeta: {
         date: new Date(),
-        version: '1.0',
-        exportedBy: req.user?.id || 'system'
+        version: '1.2',
+        exportedBy: req.user?.id || 'system',
+        schemaVersion: '1.0'
       }
     };
 
@@ -171,7 +200,8 @@ router.post('/:id/export', async (req, res) => {
     app.exportedData = exportData;
     app.exportConfig = {
       lastExportDate: new Date(),
-      exportVersion: '1.0'
+      exportVersion: '1.2',
+      exportedBy: req.user?.id || 'system'
     };
     await app.save();
 
@@ -179,7 +209,9 @@ router.post('/:id/export', async (req, res) => {
     res.status(200).json({
       success: true,
       data: exportData,
-      message: 'Export réussi'
+      message: 'Export réussi',
+      exportId: app._id,
+      timestamp: new Date()
     });
 
   } catch (error) {
@@ -188,7 +220,8 @@ router.post('/:id/export', async (req, res) => {
       success: false,
       message: 'Échec export',
       error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      timestamp: new Date()
     });
   }
 });

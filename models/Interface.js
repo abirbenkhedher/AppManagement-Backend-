@@ -273,6 +273,45 @@ const ComponentSchema = new mongoose.Schema({
       type: String,
       enum: ['relative', 'absolute', 'fixed', 'sticky', '']
     },
+
+
+    top: { // Nouvelle propriété
+      type: String,
+      validate: {
+        validator: function(v) {
+          return !v || /^\d+(px|%|rem|em|vh|vw|auto)$/.test(v);
+        },
+        message: props => `${props.value} n'est pas une valeur de position 'top' valide!`
+      }
+    },
+    left: { // Nouvelle propriété
+      type: String,
+      validate: {
+        validator: function(v) {
+          return !v || /^\d+(px|%|rem|em|vh|vw|auto)$/.test(v);
+        },
+        message: props => `${props.value} n'est pas une valeur de position 'left' valide!`
+      }
+    },
+    right: { // Nouvelle propriété
+      type: String,
+      validate: {
+        validator: function(v) {
+          return !v || /^\d+(px|%|rem|em|vh|vw|auto)$/.test(v);
+        },
+        message: props => `${props.value} n'est pas une valeur de position 'right' valide!`
+      }
+    },
+    bottom: { // Nouvelle propriété
+      type: String,
+      validate: {
+        validator: function(v) {
+          return !v || /^\d+(px|%|rem|em|vh|vw|auto)$/.test(v);
+        },
+        message: props => `${props.value} n'est pas une valeur de position 'bottom' valide!`
+      }
+    },
+    
     border: {
       type: String,
       validate: {
