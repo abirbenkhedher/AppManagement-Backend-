@@ -120,6 +120,7 @@ router.post('/:id/export', async (req, res) => {
           transform: component.style.transform,
           transition: component.style.transition
         } : null,
+        maximoAttribute: component.maximoAttribute,
         components: component.components?.map(nestedComp => exportComponent(nestedComp)) || []
       };
     };
@@ -146,7 +147,8 @@ router.post('/:id/export', async (req, res) => {
             backgroundColor: intf.interfaceConfig.backgroundColor,
             padding: intf.interfaceConfig.padding,
             margin: intf.interfaceConfig.margin,
-            gap: intf.interfaceConfig.gap
+            gap: intf.interfaceConfig.gap,
+            objective: intf.interfaceConfig.objective
           } : null,
           headerConfig: intf.headerConfig ? {
             title: intf.headerConfig.title,

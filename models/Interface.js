@@ -1,35 +1,36 @@
 const mongoose = require('mongoose');
 
+// Schéma pour les actions
 const ActionSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: ['navigation', 'api', 'function', 'menu'],
-    required: true
+    required: true,
   },
   target: String,
   params: mongoose.Schema.Types.Mixed,
   method: {
     type: String,
-    enum: ['GET', 'POST', 'PUT', 'DELETE', ''], // Ajout de '' pour les cas non-API
+    enum: ['GET', 'POST', 'PUT', 'DELETE', ''],
   },
   url: String,
   headers: mongoose.Schema.Types.Mixed,
   body: mongoose.Schema.Types.Mixed,
   functionName: String,
-  dataPath: String, // Ajout pour gérer le chemin des données (ex: "data.items")
-  detailInterface: String, // Interface cible pour les détails
+  dataPath: String,
+  detailInterface: String,
   detailConfig: {
     idField: String,
     listFields: [{
       label: String,
-      field: String
+      field: String,
     }],
     detailFields: [{
       label: String,
-      field: String
+      field: String,
     }],
-    selectedItem: mongoose.Schema.Types.Mixed
-  }
+    selectedItem: mongoose.Schema.Types.Mixed,
+  },
 }, { _id: false });
 
 // Schéma pour les options de menu
@@ -37,22 +38,22 @@ const MenuOptionSchema = new mongoose.Schema({
   id: {
     type: String,
     required: [true, 'Un ID est requis pour chaque option de menu'],
-    default: () => mongoose.Types.ObjectId().toString()
+    default: () => mongoose.Types.ObjectId().toString(),
   },
   label: {
     type: String,
     required: [true, 'Le libellé de l\'option est requis'],
     trim: true,
-    minlength: [2, 'Le libellé doit contenir au moins 2 caractères']
+    minlength: [2, 'Le libellé doit contenir au moins 2 caractères'],
   },
   action: {
     type: ActionSchema,
-    required: [true, 'Une action est requise pour chaque option de menu']
+    required: [true, 'Une action est requise pour chaque option de menu'],
   },
   isActive: {
     type: Boolean,
-    default: true
-  }
+    default: true,
+  },
 }, { _id: false });
 
 // Schéma pour la configuration du header
@@ -62,7 +63,7 @@ const HeaderConfigSchema = new mongoose.Schema({
     required: [true, 'Le titre du header est requis'],
     default: 'Titre',
     trim: true,
-    maxlength: [50, 'Le titre ne peut excéder 50 caractères']
+    maxlength: [50, 'Le titre ne peut excéder 50 caractères'],
   },
   backgroundColor: {
     type: String,
@@ -71,8 +72,8 @@ const HeaderConfigSchema = new mongoose.Schema({
       validator: function(v) {
         return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(v);
       },
-      message: props => `${props.value} n'est pas une couleur hexadécimale valide!`
-    }
+      message: props => `${props.value} n'est pas une couleur hexadécimale valide!`,
+    },
   },
   color: {
     type: String,
@@ -81,8 +82,8 @@ const HeaderConfigSchema = new mongoose.Schema({
       validator: function(v) {
         return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(v);
       },
-      message: props => `${props.value} n'est pas une couleur hexadécimale valide!`
-    }
+      message: props => `${props.value} n'est pas une couleur hexadécimale valide!`,
+    },
   },
   fontSize: {
     type: String,
@@ -91,26 +92,26 @@ const HeaderConfigSchema = new mongoose.Schema({
       validator: function(v) {
         return /^\d+(px|rem|em|%)$/.test(v);
       },
-      message: props => `${props.value} n'est pas une taille de police valide!`
-    }
+      message: props => `${props.value} n'est pas une taille de police valide!`,
+    },
   },
   fontWeight: {
     type: String,
     enum: ['normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '700', '800', '900'],
-    default: 'bold'
+    default: 'bold',
   },
   textAlign: {
     type: String,
     enum: ['left', 'center', 'right', 'justify'],
-    default: 'center'
+    default: 'center',
   },
   showBackButton: {
     type: Boolean,
-    default: true
+    default: true,
   },
   showMenuButton: {
     type: Boolean,
-    default: true
+    default: true,
   },
   menuOptions: {
     type: [MenuOptionSchema],
@@ -120,65 +121,86 @@ const HeaderConfigSchema = new mongoose.Schema({
         const ids = v.map(option => option.id);
         return new Set(ids).size === ids.length;
       },
-      message: 'Les options de menu contiennent des IDs en double!'
-    }
+      message: 'Les options de menu contiennent des IDs en double!',
+    },
   },
   fixed: {
     type: Boolean,
-    default: true
+    default: true,
   },
   elevation: {
     type: Number,
     min: 0,
     max: 24,
-    default: 4
-  }
+    default: 4,
+  },
 }, { _id: false });
 
+
+const MaximoAttributeSchema = new mongoose.Schema({
+  objectname: {
+    type: String,
+    trim: true,
+  },
+  attributename: {
+    type: String,
+    trim: true,
+  },
+  maxtype: {
+    type: String,
+    trim: true,
+  },
+  title: {
+    type: String,
+    trim: true,
+  },
+}, { _id: false });
+
+// Schéma pour les composants
 const ComponentSchema = new mongoose.Schema({
   id: {
     type: String,
-    required: true
+    required: true,
   },
   type: {
     type: String,
     required: true,
-    enum: ['Bouton', 'Champ texte', 'Label', 'Image', 'ItemListe', 'CardDetails'] // Mise à jour pour inclure ItemListe et CardDetails
+    enum: ['Bouton', 'Champ texte', 'Label', 'Image', 'ItemListe', 'CardDetails'],
   },
   components: {
-    type: [this], // Support des composants imbriqués récursivement
-    default: []
+    type: [this],
+    default: [],
   },
   apiField: {
     type: String,
-    default: ''
+    default: '',
   },
   apiConfig: {
     url: String,
     method: {
       type: String,
-      enum: ['GET', 'POST', 'PUT', 'DELETE', '']
+      enum: ['GET', 'POST', 'PUT', 'DELETE', ''],
     },
     headers: mongoose.Schema.Types.Mixed,
     params: mongoose.Schema.Types.Mixed,
     dataPath: String,
-    itemTemplate: mongoose.Schema.Types.Mixed
+    itemTemplate: mongoose.Schema.Types.Mixed,
   },
   detailInterface: String,
   detailConfig: {
     idField: {
       type: String,
-      default: 'id'
+      default: 'id',
     },
     listFields: [{
       label: String,
-      field: String
+      field: String,
     }],
     detailFields: [{
       label: String,
-      field: String
+      field: String,
     }],
-    selectedItem: mongoose.Schema.Types.Mixed
+    selectedItem: mongoose.Schema.Types.Mixed,
   },
   placeholder: String,
   text: String,
@@ -188,10 +210,14 @@ const ComponentSchema = new mongoose.Schema({
     required: function() {
       return this.type === 'Champ texte';
     },
-    default: 'text'
+    default: 'text',
   },
   variant: String,
   action: ActionSchema,
+  maximoAttribute: {
+    type: MaximoAttributeSchema,
+    default: null, // Permettre la valeur null
+  },
   style: {
     backgroundColor: {
       type: String,
@@ -199,8 +225,8 @@ const ComponentSchema = new mongoose.Schema({
         validator: function(v) {
           return !v || /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(v);
         },
-        message: props => `${props.value} n'est pas une couleur hexadécimale valide!`
-      }
+        message: props => `${props.value} n'est pas une couleur hexadécimale valide!`,
+      },
     },
     color: {
       type: String,
@@ -208,8 +234,8 @@ const ComponentSchema = new mongoose.Schema({
         validator: function(v) {
           return !v || /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(v);
         },
-        message: props => `${props.value} n'est pas une couleur hexadécimale valide!`
-      }
+        message: props => `${props.value} n'est pas une couleur hexadécimale valide!`,
+      },
     },
     width: {
       type: String,
@@ -217,8 +243,8 @@ const ComponentSchema = new mongoose.Schema({
         validator: function(v) {
           return !v || /^\d+(px|%|rem|em|vw|vh|auto)$/.test(v);
         },
-        message: props => `${props.value} n'est pas une largeur valide!`
-      }
+        message: props => `${props.value} n'est pas une largeur valide!`,
+      },
     },
     height: {
       type: String,
@@ -226,8 +252,8 @@ const ComponentSchema = new mongoose.Schema({
         validator: function(v) {
           return !v || /^\d+(px|%|rem|em|vh|auto)$/.test(v);
         },
-        message: props => `${props.value} n'est pas une hauteur valide!`
-      }
+        message: props => `${props.value} n'est pas une hauteur valide!`,
+      },
     },
     margin: {
       type: String,
@@ -235,8 +261,8 @@ const ComponentSchema = new mongoose.Schema({
         validator: function(v) {
           return !v || /^(\d+px\s*){1,4}$/.test(v) || v === 'auto';
         },
-        message: props => `${props.value} n'est pas une marge valide!`
-      }
+        message: props => `${props.value} n'est pas une marge valide!`,
+      },
     },
     padding: {
       type: String,
@@ -244,8 +270,8 @@ const ComponentSchema = new mongoose.Schema({
         validator: function(v) {
           return !v || /^(\d+px\s*){1,4}$/.test(v);
         },
-        message: props => `${props.value} n'est pas un padding valide!`
-      }
+        message: props => `${props.value} n'est pas un padding valide!`,
+      },
     },
     fontSize: {
       type: String,
@@ -253,73 +279,70 @@ const ComponentSchema = new mongoose.Schema({
         validator: function(v) {
           return !v || /^\d+(px|rem|em|%)$/.test(v);
         },
-        message: props => `${props.value} n'est pas une taille de police valide!`
-      }
+        message: props => `${props.value} n'est pas une taille de police valide!`,
+      },
     },
     fontWeight: {
       type: String,
-      enum: ['normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '700', '800', '900', '']
+      enum: ['normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '700', '800', '900', ''],
     },
     fontStyle: {
       type: String,
-      enum: ['normal', 'italic', 'oblique', '']
+      enum: ['normal', 'italic', 'oblique', ''],
     },
     textAlign: {
       type: String,
-      enum: ['left', 'center', 'right', 'justify', '']
+      enum: ['left', 'center', 'right', 'justify', ''],
     },
     zIndex: Number,
     position: {
       type: String,
-      enum: ['relative', 'absolute', 'fixed', 'sticky', '']
+      enum: ['relative', 'absolute', 'fixed', 'sticky', ''],
     },
-
-
-    top: { // Nouvelle propriété
+    top: {
       type: String,
       validate: {
         validator: function(v) {
           return !v || /^\d+(px|%|rem|em|vh|vw|auto)$/.test(v);
         },
-        message: props => `${props.value} n'est pas une valeur de position 'top' valide!`
-      }
+        message: props => `${props.value} n'est pas une valeur de position \'top\' valide!`,
+      },
     },
-    left: { // Nouvelle propriété
+    left: {
       type: String,
       validate: {
         validator: function(v) {
           return !v || /^\d+(px|%|rem|em|vh|vw|auto)$/.test(v);
         },
-        message: props => `${props.value} n'est pas une valeur de position 'left' valide!`
-      }
+        message: props => `${props.value} n'est pas une valeur de position \'left\' valide!`,
+      },
     },
-    right: { // Nouvelle propriété
+    right: {
       type: String,
       validate: {
         validator: function(v) {
           return !v || /^\d+(px|%|rem|em|vh|vw|auto)$/.test(v);
         },
-        message: props => `${props.value} n'est pas une valeur de position 'right' valide!`
-      }
+        message: props => `${props.value} n'est pas une valeur de position \'right\' valide!`,
+      },
     },
-    bottom: { // Nouvelle propriété
+    bottom: {
       type: String,
       validate: {
         validator: function(v) {
           return !v || /^\d+(px|%|rem|em|vh|vw|auto)$/.test(v);
         },
-        message: props => `${props.value} n'est pas une valeur de position 'bottom' valide!`
-      }
+        message: props => `${props.value} n'est pas une valeur de position \'bottom\' valide!`,
+      },
     },
-    
     border: {
       type: String,
       validate: {
         validator: function(v) {
           return !v || /^(\d+px\s*(solid|dashed|dotted)\s*#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3}))$/.test(v);
         },
-        message: props => `${props.value} n'est pas une bordure valide!`
-      }
+        message: props => `${props.value} n'est pas une bordure valide!`,
+      },
     },
     borderColor: {
       type: String,
@@ -327,8 +350,8 @@ const ComponentSchema = new mongoose.Schema({
         validator: function(v) {
           return !v || /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(v);
         },
-        message: props => `${props.value} n'est pas une couleur de bordure valide!`
-      }
+        message: props => `${props.value} n'est pasBROKEN LINK n'est pas une couleur de bordure valide!`,
+      },
     },
     borderWidth: {
       type: String,
@@ -336,8 +359,8 @@ const ComponentSchema = new mongoose.Schema({
         validator: function(v) {
           return !v || /^\d+px$/.test(v);
         },
-        message: props => `${props.value} n'est pas une épaisseur de bordure valide!`
-      }
+        message: props => `${props.value} n'est pas une épaisseur de bordure valide!`,
+      },
     },
     borderRadius: {
       type: String,
@@ -345,8 +368,8 @@ const ComponentSchema = new mongoose.Schema({
         validator: function(v) {
           return !v || /^\d+(px|%|rem|em)$/.test(v);
         },
-        message: props => `${props.value} n'est pas un rayon de bordure valide!`
-      }
+        message: props => `${props.value} n'est pas un rayon de bordure valide!`,
+      },
     },
     boxShadow: String,
     display: String,
@@ -357,10 +380,11 @@ const ComponentSchema = new mongoose.Schema({
     cursor: String,
     opacity: Number,
     transform: String,
-    transition: String
-  }
+    transition: String,
+  },
 });
 
+// Schéma pour la configuration de l'interface
 const InterfaceConfigSchema = new mongoose.Schema({
   backgroundColor: {
     type: String,
@@ -369,8 +393,8 @@ const InterfaceConfigSchema = new mongoose.Schema({
       validator: function(v) {
         return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(v);
       },
-      message: props => `${props.value} n'est pas une couleur hexadécimale valide!`
-    }
+      message: props => `${props.value} n'est pas une couleur hexadécimale valide!`,
+    },
   },
   padding: {
     type: String,
@@ -379,8 +403,8 @@ const InterfaceConfigSchema = new mongoose.Schema({
       validator: function(v) {
         return /^(\d+px\s*){1,4}$/.test(v);
       },
-      message: props => `${props.value} n'est pas un padding valide!`
-    }
+      message: props => `${props.value} n'est pas un padding valide!`,
+    },
   },
   margin: {
     type: String,
@@ -389,8 +413,8 @@ const InterfaceConfigSchema = new mongoose.Schema({
       validator: function(v) {
         return /^(\d+px\s*){1,4}$/.test(v) || v === 'auto';
       },
-      message: props => `${props.value} n'est pas une marge valide!`
-    }
+      message: props => `${props.value} n'est pas une marge valide!`,
+    },
   },
   gap: {
     type: String,
@@ -399,39 +423,50 @@ const InterfaceConfigSchema = new mongoose.Schema({
       validator: function(v) {
         return /^\d+px$/.test(v);
       },
-      message: props => `${props.value} n'est pas un gap valide!`
-    }
-  }
+      message: props => `${props.value} n'est pas un gap valide!`,
+    },
+  },
+  objective: {
+    objectname: {
+      type: String,
+      trim: true,
+    },
+    description: {
+      type: String,
+      trim: true,
+    },
+  },
 }, { _id: false, versionKey: false });
 
+// Schéma principal de l'interface
 const InterfaceSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
     trim: true,
-    index: true
+    index: true,
   },
   components: {
     type: [ComponentSchema],
-    default: []
+    default: [],
   },
   headerConfig: {
     type: HeaderConfigSchema,
-    default: () => ({})
+    default: () => ({}),
   },
   interfaceConfig: {
     type: InterfaceConfigSchema,
-    default: () => ({})
+    default: () => ({}),
   },
   createdAt: {
     type: Date,
     default: Date.now,
-    immutable: true
+    immutable: true,
   },
   updatedAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 }, {
   timestamps: true,
   toJSON: {
@@ -439,9 +474,9 @@ const InterfaceSchema = new mongoose.Schema({
     transform: function(doc, ret) {
       delete ret.__v;
       return ret;
-    }
+    },
   },
-  toObject: { virtuals: true }
+  toObject: { virtuals: true },
 });
 
 // Middleware pour mettre à jour updatedAt
