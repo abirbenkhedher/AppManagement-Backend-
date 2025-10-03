@@ -1,26 +1,53 @@
-const Interface = require('../models/Interface');
-const Module = require('../models/Module');
+const Interface = require("../models/Interface");
+const Module = require("../models/Module");
 
-// Créer une interface
+/******************************************************************************
+ * CONTROLEUR POUR LA GESTION DES INTERFACES
+ * 
+ * Ce fichier contient tous les contrôleurs pour les opérations CRUD sur les
+ * interfaces utilisateur, incluant :
+ * - Création, lecture, mise à jour et suppression d'interfaces
+ * - Gestion de la configuration des en-têtes et du layout
+ * - Association des composants et gestion des modules liés
+ ******************************************************************************/
+
+// ============================================================================
+// CRÉATION ET RÉCUPÉRATION
+// ============================================================================
+
+/**
+ * Crée une nouvelle interface avec sa configuration
+ */
 exports.createInterface = async (req, res) => {
   try {
-    console.log('Données reçues pour création :', JSON.stringify(req.body, null, 2));
-    const { name, components, headerConfig = {}, interfaceConfig = {} } = req.body;
+    console.log(
+      "Données reçues pour création :",
+      JSON.stringify(req.body, null, 2)
+    );
+    const {
+      name,
+      components,
+      headerConfig = {},
+      interfaceConfig = {},
+    } = req.body;
 
     if (!name) {
-      return res.status(400).json({ message: 'Le nom de l\'interface est requis' });
+      return res
+        .status(400)
+        .json({ message: "Le nom de l'interface est requis" });
     }
 
+    // Configuration de l'interface avec valeurs par défaut
     const newInterface = new Interface({
       name,
-      components: components || [], // Les composants incluent maintenant maximoAttribute
+      components: components || [],
       headerConfig: {
-        title: headerConfig.title || 'Titre',
-        backgroundColor: headerConfig.backgroundColor || '#0d6efd',
-        color: headerConfig.color || '#ffffff',
-        fontSize: headerConfig.fontSize || '18px',
-        fontWeight: headerConfig.fontWeight || 'bold',
-        textAlign: headerConfig.textAlign || 'center',
+        title: headerConfig.title || "Titre",
+        backgroundColor: headerConfig.backgroundColor || "#0d6efd",
+        color: headerConfig.color || "#ffffff",
+        fontSize: headerConfig.fontSize || "18px",
+        fontWeight: headerConfig.fontWeight || "bold",
+        textAlign: headerConfig.textAlign || "center",
         showBackButton: headerConfig.showBackButton !== false,
         showMenuButton: headerConfig.showMenuButton !== false,
         menuOptions: headerConfig.menuOptions || [],
@@ -28,46 +55,55 @@ exports.createInterface = async (req, res) => {
         elevation: headerConfig.elevation || 4,
       },
       interfaceConfig: {
-        backgroundColor: interfaceConfig.backgroundColor || '#f8f9fa',
-        padding: interfaceConfig.padding || '15px',
-        margin: interfaceConfig.margin || '0px',
-        gap: interfaceConfig.gap || '10px',
+        backgroundColor: interfaceConfig.backgroundColor || "#f8f9fa",
+        padding: interfaceConfig.padding || "15px",
+        margin: interfaceConfig.margin || "0px",
+        gap: interfaceConfig.gap || "10px",
         objective: interfaceConfig.objective || null,
       },
     });
 
     const savedInterface = await newInterface.save();
-    console.log('Interface sauvegardée :', JSON.stringify(savedInterface, null, 2));
+    console.log(
+      "Interface sauvegardée :",
+      JSON.stringify(savedInterface, null, 2)
+    );
     res.status(201).json(savedInterface);
   } catch (error) {
-    console.error('Erreur lors de la création :', error);
+    console.error("Erreur lors de la création :", error);
     res.status(400).json({
-      message: 'Erreur lors de la création',
+      message: "Erreur lors de la création",
       error: error.message,
     });
   }
 };
 
-// Lire toutes les interfaces
+/**
+ * Récupère toutes les interfaces avec leurs composants
+ */
 exports.getAllInterfaces = async (req, res) => {
   try {
-    const interfaces = await Interface.find().populate('components');
+    const interfaces = await Interface.find().populate("components");
     res.status(200).json(interfaces);
   } catch (error) {
-    console.error('Erreur lors de la récupération des interfaces :', error);
+    console.error("Erreur lors de la récupération des interfaces :", error);
     res.status(500).json({
-      message: 'Erreur lors de la récupération des interfaces',
+      message: "Erreur lors de la récupération des interfaces",
       error: error.message,
     });
   }
 };
 
-// Lire une interface par ID
+/**
+ * Récupère une interface spécifique par son ID
+ */
 exports.getInterfaceById = async (req, res) => {
   try {
-    const interface = await Interface.findById(req.params.id).populate('components');
+    const interface = await Interface.findById(req.params.id).populate(
+      "components"
+    );
     if (!interface) {
-      return res.status(404).json({ message: 'Interface non trouvée' });
+      return res.status(404).json({ message: "Interface non trouvée" });
     }
     const responseData = interface.toObject();
     if (!responseData.interfaceConfig) {
@@ -75,35 +111,52 @@ exports.getInterfaceById = async (req, res) => {
     }
     res.status(200).json(responseData);
   } catch (error) {
-    console.error('Erreur lors de la récupération de l\'interface :', error);
+    console.error("Erreur lors de la récupération de l'interface :", error);
     res.status(500).json({
-      message: 'Erreur lors de la récupération de l\'interface',
+      message: "Erreur lors de la récupération de l'interface",
       error: error.message,
     });
   }
 };
 
-// Mettre à jour une interface
+// ============================================================================
+// MISE À JOUR ET SUPPRESSION
+// ============================================================================
+
+/**
+ * Met à jour une interface existante
+ */
 exports.updateInterface = async (req, res) => {
   try {
-    console.log('Données reçues pour mise à jour :', JSON.stringify(req.body, null, 2)); // Log pour débogage
+    console.log(
+      "Données reçues pour mise à jour :",
+      JSON.stringify(req.body, null, 2)
+    );
     const { id } = req.params;
-    const { name, components, headerConfig = {}, interfaceConfig = {} } = req.body;
+    const {
+      name,
+      components,
+      headerConfig = {},
+      interfaceConfig = {},
+    } = req.body;
 
     if (!name) {
-      return res.status(400).json({ message: 'Le nom de l\'interface est requis' });
+      return res
+        .status(400)
+        .json({ message: "Le nom de l'interface est requis" });
     }
 
+    // Préparation des données de mise à jour
     const updateData = {
       name,
       components: components || [],
       headerConfig: {
-        title: headerConfig.title || 'Titre',
-        backgroundColor: headerConfig.backgroundColor || '#0d6efd',
-        color: headerConfig.color || '#ffffff',
-        fontSize: headerConfig.fontSize || '18px',
-        fontWeight: headerConfig.fontWeight || 'bold',
-        textAlign: headerConfig.textAlign || 'center',
+        title: headerConfig.title || "Titre",
+        backgroundColor: headerConfig.backgroundColor || "#0d6efd",
+        color: headerConfig.color || "#ffffff",
+        fontSize: headerConfig.fontSize || "18px",
+        fontWeight: headerConfig.fontWeight || "bold",
+        textAlign: headerConfig.textAlign || "center",
         showBackButton: headerConfig.showBackButton !== false,
         showMenuButton: headerConfig.showMenuButton !== false,
         menuOptions: headerConfig.menuOptions || [],
@@ -111,11 +164,11 @@ exports.updateInterface = async (req, res) => {
         elevation: headerConfig.elevation || 4,
       },
       interfaceConfig: {
-        backgroundColor: interfaceConfig.backgroundColor || '#f8f9fa',
-        padding: interfaceConfig.padding || '15px',
-        margin: interfaceConfig.margin || '0px',
-        gap: interfaceConfig.gap || '10px',
-        objective: interfaceConfig.objective || null, // Gestion explicite de objective
+        backgroundColor: interfaceConfig.backgroundColor || "#f8f9fa",
+        padding: interfaceConfig.padding || "15px",
+        margin: interfaceConfig.margin || "0px",
+        gap: interfaceConfig.gap || "10px",
+        objective: interfaceConfig.objective || null, 
       },
       updatedAt: Date.now(),
     };
@@ -127,46 +180,47 @@ exports.updateInterface = async (req, res) => {
     );
 
     if (!updatedInterface) {
-      return res.status(404).json({ message: 'Interface non trouvée' });
+      return res.status(404).json({ message: "Interface non trouvée" });
     }
 
-    console.log('Interface mise à jour :', JSON.stringify(updatedInterface, null, 2)); // Log pour débogage
+    console.log(
+      "Interface mise à jour :",
+      JSON.stringify(updatedInterface, null, 2)
+    ); 
     res.status(200).json(updatedInterface);
   } catch (error) {
-    console.error('Erreur lors de la mise à jour :', error);
+    console.error("Erreur lors de la mise à jour :", error);
     res.status(400).json({
-      message: 'Erreur lors de la mise à jour',
+      message: "Erreur lors de la mise à jour",
       error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 };
 
-// Supprimer une interface
+/**
+ * Supprime une interface et la retire des modules associés
+ */
 exports.deleteInterface = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Supprimer les références dans les modules
-    await Module.updateMany(
-      { interfaces: id },
-      { $pull: { interfaces: id } }
-    );
+    // Nettoyage des références dans les modules
+    await Module.updateMany({ interfaces: id }, { $pull: { interfaces: id } });
 
-    // Supprimer l'interface
     const result = await Interface.findByIdAndDelete(id);
 
     if (!result) {
-      return res.status(404).json({ message: 'Interface non trouvée' });
+      return res.status(404).json({ message: "Interface non trouvée" });
     }
 
     res.status(200).json({ success: true });
   } catch (error) {
-    console.error('Erreur lors de la suppression :', error);
+    console.error("Erreur lors de la suppression :", error);
     res.status(500).json({
-      message: 'Erreur lors de la suppression',
+      message: "Erreur lors de la suppression",
       error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 };

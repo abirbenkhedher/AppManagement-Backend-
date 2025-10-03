@@ -3,9 +3,7 @@ const express = require('express');
 const router = express.Router();
 const App = require('../models/MobileApp');
 
-// Export endpoint modifié
-// Modifiez la route d'export pour inclure les actions complètes
-// Modifiez la route d'export pour inclure les headers
+
 router.post('/:id/export', async (req, res) => {
   try {
     console.log('Début export pour app:', req.params.id);
@@ -27,7 +25,6 @@ router.post('/:id/export', async (req, res) => {
       return res.status(404).json({ message: 'Application non trouvée' });
     }
 
-    // Fonction récursive pour exporter les composants imbriqués
     const exportComponent = (component) => {
       return {
         id: component.id,
@@ -228,7 +225,6 @@ router.post('/:id/export', async (req, res) => {
   }
 });
 
-// Nouvelle route pour gérer les actions des composants
 router.post('/:id/components/actions', async (req, res) => {
   try {
     const { id } = req.params;
@@ -272,7 +268,7 @@ router.post('/:id/components/actions', async (req, res) => {
   }
 });
 
-// Get by name endpoint (inchangé)
+
 router.get('/by-name/:name', async (req, res) => {
   try {
     const { name } = req.params;
@@ -305,60 +301,5 @@ router.get('/by-name/:name', async (req, res) => {
   }
 });
 
-// Générer un lien de prévisualisation (inchangé)
-router.post('/generate-preview', async (req, res) => {
-  try {
-    const { appId, appName } = req.body;
-    const token = crypto.randomBytes(16).toString('hex');
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    await App.findByIdAndUpdate(appId, {
-      previewToken: token,
-      previewTokenExpires: expiresAt
-    });
-
-    const previewUrl = `${process.env.API_BASE_URL || 'http://your-api.com'}/api/apps/preview/${appName}?token=${token}`;
-
-    res.json({
-      success: true,
-      previewUrl,
-      deepLink: `exp://your-ip:19000/--/preview?url=${encodeURIComponent(previewUrl)}`
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la génération du lien'
-    });
-  }
-});
-
-// Endpoint de prévisualisation (inchangé)
-router.get('/preview/:name', async (req, res) => {
-  try {
-    const { name } = req.params;
-    const { token } = req.query;
-
-    const app = await App.findOne({ name })
-      .populate('modules interfaces')
-      .select('+previewToken +previewTokenExpires');
-
-    if (!app || app.previewToken !== token || new Date(app.previewTokenExpires) < new Date()) {
-      return res.status(401).json({
-        success: false,
-        message: 'Lien de prévisualisation invalide ou expiré'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: app.exportedData || app.toObject()
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la récupération des données'
-    });
-  }
-});
 
 module.exports = router;

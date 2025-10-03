@@ -1,13 +1,12 @@
-// authRoutes.js
 const express = require('express');
-const authController = require('../controllers/authController'); // Importez le contrôleur
+const authController = require('../controllers/authController'); 
 
 const router = express.Router();
 
 // Route d'inscription
-router.post('/register', authController.register); // Utilisez la fonction exportée
+router.post('/register', authController.register); 
 
 // Route de connexion
-router.post('/login', authController.login); // Utilisez la fonction exportée
+router.post('/login', authController.login); 
 
 module.exports = router;
